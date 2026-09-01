@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2023 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+import sys
+import json
+import agent
+import os
+import secrets
+
+request = json.load(sys.stdin)
+renv = request['environment']
+
+#Read admin /username/email from restored server.env
+restored = agent.read_envfile("server.env") if os.path.exists("server.env") else {}
+
+configure_retval = agent.tasks.run(agent_id=os.environ['AGENT_ID'], action='configure-module', data={
+    "lets_encrypt": renv["TRAEFIK_LETS_ENCRYPT"] == "True",
+    "host": renv["TRAEFIK_HOST"],
+    "http2https": renv["TRAEFIK_HTTP2HTTPS"] == "True",
+    "admin_username": restored.get("ADMIN_USERNAME", ""),
+    "admin_email": restored.get("ADMIN_EMAIL", ""),
+    # Only needed to satisfy the schema: the admin user already
+    # exists in the restored database, 90create_admin_user will skip.
+    "admin_password": secrets.token_hex(16),
+})
+agent.assert_exp(configure_retval['exit_code'] == 0, "The configure-module subtask failed!")

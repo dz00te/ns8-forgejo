@@ -1,0 +1,27 @@
+#
+# Copyright (C) 2022 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+[Unit]
+Description=Podman  forgejo-app.service
+BindsTo=forgejo.service
+After=forgejo.service
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%S/state/environment
+EnvironmentFile=-%S/state/smarthost.env
+WorkingDirectory=%S/state
+Restart=always
+TimeoutStopSec=70
+ExecStartPre=/bin/mkdir -p tmp
+ExecStartPre=/bin/rm -f %t/forgejo-app.pid %t/forgejo-app.ctr-id
+ExecStartPre=-runagent discover-smarthost
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/forgejo-app.pid  --cidfile %t/forgejo-app.ctr-id --cgroups=no-conmon  --pod-id-file %t/forgejo.pod-id --replace -d --name  forgejo-app  --volume forgejo-data:/data:Z   --env-file server.env  --env-file smarthost.env  ${FORGEJO_IMAGE}  
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/forgejo-app.ctr-id -t 10
+ExecReload=/usr/bin/podman kill -s HUP forgejo-app
+SyslogIdentifier=%u
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/forgejo-app.ctr-id
+PIDFile=%t/forgejo-app.pid
+Type=forking
+[Install]
+WantedBy=default.target

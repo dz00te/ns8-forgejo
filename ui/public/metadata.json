@@ -1,0 +1,21 @@
+{
+  "name": "Forgejo",
+  "upstream_name": "Forgejo 16.0.3",
+  "description": {
+    "en": "Self-hosted lightweight software forge for Git hosting, code review and CI",
+    "it": "Self-hosted forge software leggero per hosting Git, code review e CI"
+  },
+  "categories": ["development"],
+  "authors": [
+    {
+      "name": "dz00te",
+      "email": "dz00te@framassa.org"
+    }
+  ],
+  "docs": {
+    "documentation_url": "https://docs.forgejo.com/",
+    "bug_url": "https://github.com/dz00te/ns8-forgejo/issues",
+    "code_url": "https://github.com/dz00te/ns8-forgejo"
+  },
+  "source": "ghcr.io/dz00te/forgejo"
+}

@@ -1,0 +1,59 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Configure forgejo",
+    "$id": "http://nethserver.org/json-schema/task/input/forgejo/configure-module",
+    "description": "Configure forgejo",
+    "examples": [
+        {
+            "host": "forgejo.domain.org",
+            "http2https": true,
+            "lets_encrypt": true
+        }
+    ],
+    "type": "object",
+    "required": [
+        "host",
+        "http2https",
+        "lets_encrypt",
+        "admin_password"
+    ],
+    "properties": {
+        "host": {
+            "type": "string",
+            "description": "Host name for the application, like 'forgejo.domain.org'",
+            "format": "hostname",
+            "pattern": "\\."
+        },
+        "lets_encrypt": {
+            "type": "boolean",
+            "title": "Let's Encrypt certificate",
+            "description": "Request a valid Let's Encrypt certificate."
+        },
+        "http2https": {
+            "type": "boolean",
+            "title": "HTTP to HTTPS redirection",
+            "description": "Redirect all the HTTP requests to HTTPS"
+        },
+        "admin_username": {
+            "type": "string",
+            "title": "Admin username",
+            "description": "Initial administrator account username. Defaults to 'forgejo-admin' if left empty. Note: 'admin' is a reserved name in Forgejo and cannot be used."
+        },
+        "admin_password": {
+            "type": "string",
+            "title": "Admin password",
+            "description": "Initial administrator account password.",
+            "minLength": 8
+        },
+        "admin_email": {
+            "type": "string",
+            "title": "Admin email",
+            "description": "Initial administrator account email. Defaults to admin@<host> if left empty."
+        },
+        "allow_registration": {
+            "type": "boolean",
+            "title": "Allow user registration",
+            "description": "Allow anyone to sign up for a new account. Disabled by default: only the admin can create new accounts."
+        }
+    }
+}

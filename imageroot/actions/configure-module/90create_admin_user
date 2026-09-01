@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2022 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Creates the admin user, if it doesn't exist yet.
+#
+import json
+import os
+import subprocess
+import sys
+import time
+import agent
+
+data = json.load(sys.stdin)
+
+server = agent.read_envfile("server.env") if os.path.exists("server.env") else {}
+username = server.get("ADMIN_USERNAME", "forgejo-admin")
+email = server.get("ADMIN_EMAIL", "admin@localhost")
+password = data["admin_password"]
+
+last_error = None
+for attempt in range(5):
+    result = subprocess.run(
+        [
+            "podman", "exec", "forgejo-app",
+            "forgejo", "admin", "user", "create",
+            "--admin",
+            "--username", username,
+            "--password", password,
+            "--email", email,
+            "--must-change-password=false",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        print("Admin user created", flush=True)
+        break
+    if "already exists" in result.stderr or "already exists" in result.stdout:
+        print("Admin user already exists, skipping", flush=True)
+        break
+    last_error = result.stderr
+    time.sleep(3)
+else:
+    print(f"Could not create admin user after 5 attempts: {last_error}", flush=True)
+    sys.exit(1)

@@ -1,0 +1,30 @@
+#
+# Copyright (C) 2022 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+#
+# This systemd unit starts a forgejo instance using Podman.
+# Most parts of this file come from podman-generate-systemd.
+#
+
+[Unit]
+Description=Podman forgejo.service
+Requires=forgejo-app.service 
+Before=forgejo-app.service 
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=-%S/state/environment
+Restart=always
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/forgejo.pid %t/forgejo.pod-id
+ExecStartPre=/usr/bin/podman pod create --infra-conmon-pidfile %t/forgejo.pid  --pod-id-file %t/forgejo.pod-id  --name forgejo  --publish 127.0.0.1:${TCP_PORT}:3000  --publish 0.0.0.0:${SSH_TCP_PORT}:2222  --replace
+ExecStart=/usr/bin/podman pod start --pod-id-file %t/forgejo.pod-id
+ExecStop=/usr/bin/podman pod stop --ignore --pod-id-file %t/forgejo.pod-id -t 10
+ExecStopPost=/usr/bin/podman pod rm --ignore -f --pod-id-file %t/forgejo.pod-id
+PIDFile=%t/forgejo.pid
+Type=forking
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2023 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Writes cluster smarthost settings as FORGEJO__mailer__* vars.
+#
+import sys
+import agent
+import os
+
+rdb = agent.redis_connect(use_replica=True)
+smtp_settings = agent.get_smarthost_settings(rdb)
+
+# encrypt_smtp -> Forgejo PROTOCOL.
+encrypt = smtp_settings.get("encrypt_smtp") or ""
+if encrypt == "tls":
+    protocol = "smtps"
+elif encrypt == "starttls":
+    protocol = "smtp+starttls"
+else:
+    protocol = "smtp"
+
+host = os.environ.get("TRAEFIK_HOST", "localhost")
+smtp_user = smtp_settings.get("username") or ""
+# Forgejo requires FROM to be a valid email; username often isn't one.
+if "@" in smtp_user:
+    from_addr = smtp_user
+else:
+    from_addr = os.environ.get("ADMIN_EMAIL") or f"forgejo@{host}"
+
+envfile = "smarthost.env"
+with open(envfile + ".tmp", "w") as efp:
+    print(f"FORGEJO__mailer__ENABLED={'true' if smtp_settings.get('enabled') else 'false'}", file=efp)
+    print(f"FORGEJO__mailer__PROTOCOL={protocol}", file=efp)
+    print(f"FORGEJO__mailer__SMTP_ADDR={smtp_settings.get('host', '')}", file=efp)
+    print(f"FORGEJO__mailer__SMTP_PORT={smtp_settings.get('port', '')}", file=efp)
+    print(f"FORGEJO__mailer__USER={smtp_settings.get('username', '')}", file=efp)
+    print(f"FORGEJO__mailer__PASSWD={smtp_settings.get('password', '')}", file=efp)
+    print(f"FORGEJO__mailer__FROM={from_addr}", file=efp)
+os.replace(envfile + ".tmp", envfile)
