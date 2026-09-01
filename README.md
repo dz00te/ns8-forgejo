@@ -2,7 +2,7 @@
 
 [Forgejo](https://forgejo.org) is a self-hosted, lightweight software
 forge for Git hosting, code review, and more. This module packages
-Forgejo for [NS8](https://github.com/NethServer/ns8-core).
+Forgejo for [NethServer 8](https://github.com/NethServer/ns8-core).
 
 ## Features
 
