@@ -7,16 +7,12 @@ import json
 import sys
 import os
 import agent
-
 data = json.load(sys.stdin)
-
 # Second reserved port (TCP_PORTS[1]) is the public SSH port.
 tcp_ports = os.environ.get("TCP_PORTS", "").split(",")
 ssh_tcp_port = tcp_ports[1] if len(tcp_ports) > 1 else os.environ.get("TCP_PORT", "2222")
 agent.set_env("SSH_TCP_PORT", ssh_tcp_port)
-
 host = data.get("host", "")
-
 FORGEJO__server__HTTP_PORT = data.get("FORGEJO__server__HTTP_PORT", "3000")
 FORGEJO__server__SSH_DOMAIN = data.get("FORGEJO__server__SSH_DOMAIN", host)
 FORGEJO__server__START_SSH_SERVER = data.get("FORGEJO__server__START_SSH_SERVER", "true")
@@ -26,22 +22,20 @@ USER_UID = data.get("USER_UID", "1000")
 USER_GID = data.get("USER_GID", "1000")
 FORGEJO__server__PROTOCOL = data.get("FORGEJO__server__PROTOCOL", "http")
 FORGEJO__server__DOMAIN = data.get("FORGEJO__server__DOMAIN", host)
-FORGEJO__server__ROOT_URL = data.get("FORGEJO__server__ROOT_URL", f"https://{host}/")
-
+# https only if the user enabled Force HTTPS or Let's Encrypt; otherwise http
+scheme = "https" if (data.get("http2https") or data.get("lets_encrypt")) else "http"
+FORGEJO__server__ROOT_URL = data.get("FORGEJO__server__ROOT_URL", f"{scheme}://{host}/")
 # Registration off by default; toggle "Allow user registration" in UI.
 FORGEJO__service__DISABLE_REGISTRATION = "false" if data.get("allow_registration") else "true"
-
 # Persisted (not sensitive) so the UI can show the saved value on reload.
 ADMIN_USERNAME = data.get("admin_username") or "forgejo-admin"
 if ADMIN_USERNAME.lower() == "admin":
     ADMIN_USERNAME = "forgejo-admin"
 ADMIN_EMAIL = data.get("admin_email") or f"admin@{host}"
-
 FORGEJO__server__SSH_PORT = data.get("FORGEJO__server__SSH_PORT", ssh_tcp_port)
 FORGEJO_WORK_DIR = data.get("FORGEJO_WORK_DIR", "/data")
 FORGEJO__database__DB_TYPE = data.get("FORGEJO__database__DB_TYPE", "sqlite3")
 FORGEJO__database__PATH = data.get("FORGEJO__database__PATH", "/data/forgejo.db")
-
 server = {
  "FORGEJO__server__HTTP_PORT" : FORGEJO__server__HTTP_PORT ,
  "FORGEJO__server__SSH_DOMAIN" : FORGEJO__server__SSH_DOMAIN ,
