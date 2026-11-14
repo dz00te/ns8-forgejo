@@ -38,6 +38,10 @@ FORGEJO__server__SSH_PORT = data.get("FORGEJO__server__SSH_PORT", ssh_tcp_port)
 FORGEJO____WORK_PATH = data.get("FORGEJO____WORK_PATH", "/var/lib/gitea")
 FORGEJO__database__DB_TYPE = data.get("FORGEJO__database__DB_TYPE", "sqlite3")
 FORGEJO__database__PATH = data.get("FORGEJO__database__PATH", "/var/lib/gitea/forgejo.db")
+# The key lives only in forgejo-data, created by 70secret_key.
+# SECRET_KEY stays empty: Forgejo refuses to start if both are set.
+FORGEJO__security__SECRET_KEY_URI = "file:/var/lib/gitea/custom/conf/secret_key"
+FORGEJO__security__SECRET_KEY = ""
 server = {
  "FORGEJO__server__HTTP_PORT" : FORGEJO__server__HTTP_PORT ,
  "FORGEJO__server__SSH_DOMAIN" : FORGEJO__server__SSH_DOMAIN ,
@@ -56,5 +60,7 @@ server = {
  "FORGEJO____WORK_PATH" : FORGEJO____WORK_PATH ,
  "FORGEJO__database__DB_TYPE" : FORGEJO__database__DB_TYPE ,
  "FORGEJO__database__PATH" : FORGEJO__database__PATH ,
+ "FORGEJO__security__SECRET_KEY_URI" : FORGEJO__security__SECRET_KEY_URI ,
+ "FORGEJO__security__SECRET_KEY" : FORGEJO__security__SECRET_KEY ,
 }
 agent.write_envfile("server.env", server)
