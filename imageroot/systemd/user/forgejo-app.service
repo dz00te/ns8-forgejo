@@ -16,7 +16,7 @@ TimeoutStopSec=70
 ExecStartPre=/bin/mkdir -p tmp
 ExecStartPre=/bin/rm -f %t/forgejo-app.pid %t/forgejo-app.ctr-id
 ExecStartPre=-runagent discover-smarthost
-ExecStart=/usr/bin/podman run --conmon-pidfile %t/forgejo-app.pid  --cidfile %t/forgejo-app.ctr-id --cgroups=no-conmon  --pod-id-file %t/forgejo.pod-id --replace -d --name  forgejo-app  --volume forgejo-data:/data:Z   --env-file server.env  --env-file smarthost.env  ${FORGEJO_IMAGE}  
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/forgejo-app.pid  --cidfile %t/forgejo-app.ctr-id --cgroups=no-conmon  --pod-id-file %t/forgejo.pod-id --replace -d --name  forgejo-app  --image-volume=ignore --volume forgejo-data:/var/lib/gitea:Z   --env-file server.env  --env-file smarthost.env  ${FORGEJO_IMAGE}  
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/forgejo-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP forgejo-app
 SyslogIdentifier=%u
