@@ -14,6 +14,8 @@ images=()
 repobase="${REPOBASE:-ghcr.io/dz00te}"
 # Configure the image name
 reponame="forgejo"
+# renovate: datasource=docker packageName=codeberg.org/forgejo/forgejo
+forgejo_version=16.0.7-rootless
 
 # Create a new empty container image
 container=$(buildah from scratch)
@@ -45,7 +47,7 @@ buildah config --entrypoint=/ \
     --label="org.nethserver.authorizations=traefik@node:routeadm node:fwadm" \
     --label="org.nethserver.tcp-ports-demand=2" \
     --label="org.nethserver.rootfull=0" \
-    --label="org.nethserver.images=codeberg.org/forgejo/forgejo:16.0.7-rootless" \
+    --label="org.nethserver.images=codeberg.org/forgejo/forgejo:${forgejo_version}" \
     "${container}"
 # Commit the image
 buildah commit "${container}" "${repobase}/${reponame}"
