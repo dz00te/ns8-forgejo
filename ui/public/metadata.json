@@ -1,6 +1,6 @@
 {
   "name": "Forgejo",
-  "upstream_name": "Forgejo 16.0.3",
+  "upstream_name": "Forgejo 16.0.7",
   "description": {
     "en": "Self-hosted lightweight software forge for Git hosting, code review and CI",
     "it": "Self-hosted forge software leggero per hosting Git, code review e CI"
@@ -13,7 +13,7 @@
     }
   ],
   "docs": {
-    "documentation_url": "https://docs.forgejo.com/",
+    "documentation_url": "https://forgejo.org/docs/latest/",
     "bug_url": "https://github.com/dz00te/ns8-forgejo/issues",
     "code_url": "https://github.com/dz00te/ns8-forgejo"
   },

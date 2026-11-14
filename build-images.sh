@@ -45,7 +45,7 @@ buildah config --entrypoint=/ \
     --label="org.nethserver.authorizations=traefik@node:routeadm node:fwadm" \
     --label="org.nethserver.tcp-ports-demand=2" \
     --label="org.nethserver.rootfull=0" \
-    --label="org.nethserver.images=codeberg.org/forgejo/forgejo:16-rootless" \
+    --label="org.nethserver.images=codeberg.org/forgejo/forgejo:16.0.7-rootless" \
     "${container}"
 # Commit the image
 buildah commit "${container}" "${repobase}/${reponame}"
