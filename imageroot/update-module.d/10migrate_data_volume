@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2023 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+#
+# Move Forgejo data from the anonymous volume of the image
+# (VOLUME /var/lib/gitea) to forgejo-data, now mounted on /var/lib/gitea.
+# Old anonymous volumes are left in place: remove them by hand.
+#
+# Manual run, ignoring the marker:
+#   10migrate_data_volume --force <volume>
+#
+
+import argparse
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+import agent
+
+WORKDIR = "/var/lib/gitea"
+DATA_VOLUME = "forgejo-data"
+MARKER = ".ns8-migrated-workdir"
+APP_INI = "custom/conf/app.ini"
+
+state_dir = os.environ.get("AGENT_STATE_DIR") or os.path.expanduser("~/.config/state")
+server_env = os.path.join(state_dir, "server.env")
+
+def log(msg, level=""):
+    print(level + msg, file=sys.stderr, flush=True)
+
+def run(*args, check=True):
+    return subprocess.run(args, check=check, capture_output=True, text=True)
+
+def unshare(*args, check=True):
+    return run("podman", "unshare", *args, check=check)
+
+def mountpoint(volume):
+    return run("podman", "volume", "inspect", "--format", "{{.Mountpoint}}", volume).stdout.strip()
+
+def has_file(volume_mp, relpath):
+    return unshare("test", "-f", os.path.join(volume_mp, relpath), check=False).returncode == 0
+
+def parse_created(value):
+    # Podman prints nanoseconds: keep seconds and timezone only
+    value = re.sub(r"\.\d+", "", value).replace("Z", "+00:00")
+    return datetime.datetime.fromisoformat(value)
+
+def current_source():
+    """Volume mounted now on WORKDIR by forgejo-app, or None if the container is missing"""
+    proc = run("podman", "container", "inspect", "--format", "{{json .Mounts}}", "forgejo-app", check=False)
+    if proc.returncode != 0:
+        return None
+    for mount in json.loads(proc.stdout) or []:
+        if mount.get("Destination") == WORKDIR:
+            return mount.get("Name")
+    return ""
+
+def newest_anonymous_source():
+    names = run("podman", "volume", "ls", "--quiet").stdout.split()
+    if not names:
+        return None
+    candidates = []
+    for vol in json.loads(run("podman", "volume", "inspect", *names).stdout):
+        if vol.get("Anonymous") and has_file(vol["Mountpoint"], APP_INI):
+            candidates.append((parse_created(vol["CreatedAt"]), vol["Name"]))
+    candidates.sort()
+    for created, name in candidates:
+        log(f"Candidate anonymous volume {name} created {created.isoformat()}")
+    return candidates[-1][1] if candidates else None
+
+def patch_server_env():
+    if not os.path.exists(server_env):
+        log(f"{server_env} not found, skipping")
+        return
+    env = agent.read_envfile(server_env)
+    env.pop("FORGEJO_WORK_DIR", None)
+    env["FORGEJO____WORK_PATH"] = WORKDIR
+    env["FORGEJO__database__PATH"] = WORKDIR + "/forgejo.db"
+    agent.write_envfile(server_env, env)
+    log(f"Updated {server_env}")
+
+def write_marker(dst_mp, content):
+    path = os.path.join(dst_mp, MARKER)
+    unshare("sh", "-c", 'printf "%s" "$2" > "$1.tmp" && mv -f "$1.tmp" "$1"', "_", path, content)
+
+def finish(exit_code=0, start=False):
+    patch_server_env()
+    # The new unit is already on disk but not loaded yet
+    run("systemctl", "--user", "daemon-reload")
+    if start:
+        run("systemctl", "--user", "start", "forgejo.service")
+        log("forgejo.service started")
+    sys.exit(exit_code)
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--force", metavar="VOLUME", help="copy from VOLUME, ignoring the marker")
+args = parser.parse_args()
+
+log(f"State directory: {state_dir}")
+
+if run("podman", "volume", "exists", DATA_VOLUME, check=False).returncode != 0:
+    run("podman", "volume", "create", DATA_VOLUME)
+dst_mp = mountpoint(DATA_VOLUME)
+
+if args.force:
+    source = args.force
+    log(f"--force: source volume {source}, marker ignored")
+else:
+    if has_file(dst_mp, MARKER):
+        marker = unshare("cat", os.path.join(dst_mp, MARKER)).stdout.strip().replace("\n", ", ")
+        log(f"Already migrated ({marker}), nothing to copy")
+        finish()
+    source = current_source()
+    if source == DATA_VOLUME:
+        log(f"forgejo-app already mounts {DATA_VOLUME} on {WORKDIR}, nothing to copy")
+        write_marker(dst_mp, f"source=none\ndate={datetime.datetime.now(datetime.timezone.utc).isoformat()}\n")
+        finish()
+    elif source:
+        log(f"forgejo-app mounts {source} on {WORKDIR}: using it as source")
+    else:
+        log("forgejo-app container not found: looking for the newest anonymous volume with " + APP_INI)
+        if has_file(dst_mp, APP_INI):
+            log(f"{DATA_VOLUME} already contains {APP_INI} but no marker: nothing copied. "
+                f"Check the volumes and run again with --force <volume>", agent.SD_WARNING)
+            finish()
+        source = newest_anonymous_source()
+        if not source:
+            log("No anonymous volume with " + APP_INI + " found: nothing copied", agent.SD_WARNING)
+            finish()
+        log(f"Selected source volume {source}")
+
+if source == DATA_VOLUME:
+    log(f"Source and destination are both {DATA_VOLUME}", agent.SD_ERR)
+    finish(1)
+
+src_mp = mountpoint(source)
+was_active = run("systemctl", "--user", "is-active", "--quiet", "forgejo.service", check=False).returncode == 0
+if was_active:
+    # Stop writes during the copy; the anonymous volume survives ExecStopPost
+    run("systemctl", "--user", "stop", "forgejo.service")
+    log("forgejo.service stopped")
+
+# Root inside the rootless user namespace keeps container uid/gid and modes.
+# Never overwrite existing files, never copy forgejo.db*.
+copy = unshare("sh", "-c",
+    'tar -C "$1" --numeric-owner --exclude=./forgejo.db --exclude="./forgejo.db-*" -cpf - . '
+    '| tar -C "$2" --numeric-owner --skip-old-files -xpf -',
+    "_", src_mp, dst_mp, check=False)
+if copy.returncode != 0:
+    # Leave the service stopped: starting it now would create a fresh app.ini
+    log(f"Copy from {source} failed: {copy.stderr.strip()}", agent.SD_ERR)
+    log(f"forgejo.service left stopped. Fix the problem and run again with --force {source}", agent.SD_ERR)
+    finish(1)
+
+files = unshare("find", src_mp, "-type", "f").stdout.count("\n")
+now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+write_marker(dst_mp, f"source={source}\ndate={now}\nfiles={files}\n")
+log(f"Copied {files} files from {source} to {DATA_VOLUME}, marker written")
+if has_file(dst_mp, APP_INI):
+    digest = unshare("sha256sum", os.path.join(dst_mp, APP_INI)).stdout.split()[0]
+    log(f"{APP_INI} sha256 {digest}")
+
+finish(start=was_active)

@@ -29,17 +29,15 @@ if os.path.exists("server.env"):
 	config["USER_GID"] = data.get("USER_GID", "1000") 
 	config["FORGEJO__server__PROTOCOL"] = data.get("FORGEJO__server__PROTOCOL", "http") 
 	config["FORGEJO__server__SSH_PORT"] = data.get("FORGEJO__server__SSH_PORT", "2222") 
-	config["FORGEJO_WORK_DIR"] = data.get("FORGEJO_WORK_DIR", "/data") 
 	config["FORGEJO__database__DB_TYPE"] = data.get("FORGEJO__database__DB_TYPE", "sqlite3") 
-	config["FORGEJO__database__PATH"] = data.get("FORGEJO__database__PATH", "/data/forgejo.db") 
+	config["FORGEJO__database__PATH"] = data.get("FORGEJO__database__PATH", "/var/lib/gitea/forgejo.db") 
 	config["allow_registration"] = data.get("FORGEJO__service__DISABLE_REGISTRATION", "true") != "true"
 	config["admin_username"] = data.get("ADMIN_USERNAME", "forgejo-admin")
 	config["admin_email"] = data.get("ADMIN_EMAIL", "")
 else: 
 	config["FORGEJO__server__SSH_PORT"] = "2222" 
-	config["FORGEJO_WORK_DIR"] = "/data" 
 	config["FORGEJO__database__DB_TYPE"] = "sqlite3" 
-	config["FORGEJO__database__PATH"] = "/data/forgejo.db" 
+	config["FORGEJO__database__PATH"] = "/var/lib/gitea/forgejo.db" 
 	config["FORGEJO__server__HTTP_PORT"] = "3000" 
 	config["FORGEJO__server__SSH_DOMAIN"] = "" 
 	config["FORGEJO__server__START_SSH_SERVER"] = "true" 
