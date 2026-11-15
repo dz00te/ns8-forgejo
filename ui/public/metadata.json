@@ -1,6 +1,6 @@
 {
   "name": "Forgejo",
-  "upstream_name": "Forgejo 16.0.7",
+  "upstream_name": "Forgejo 17.0.1",
   "description": {
     "en": "Self-hosted lightweight software forge for Git hosting, code review and CI",
     "it": "Self-hosted forge software leggero per hosting Git, code review e CI"
