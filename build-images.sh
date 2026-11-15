@@ -15,7 +15,7 @@ repobase="${REPOBASE:-ghcr.io/dz00te}"
 # Configure the image name
 reponame="forgejo"
 # renovate: datasource=docker packageName=codeberg.org/forgejo/forgejo
-forgejo_version=16.0.7-rootless
+forgejo_version=17.0.1-rootless
 
 # Create a new empty container image
 container=$(buildah from scratch)
