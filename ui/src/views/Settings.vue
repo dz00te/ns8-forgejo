@@ -71,7 +71,7 @@
               ref="admin_password"
             >
             </cv-text-input>
-              <!-- advanced options -->
+            <!-- advanced options -->
             <cv-accordion ref="accordion" class="maxwidth mg-bottom">
               <cv-accordion-item :open="true">
                 <template slot="title">{{ $t("settings.advanced") }}</template>
@@ -81,7 +81,9 @@
                     placeholder="forgejo-admin"
                     v-model.trim="adminUsername"
                     class="mg-bottom"
-                    :disabled="loading.getConfiguration || loading.configureModule"
+                    :disabled="
+                      loading.getConfiguration || loading.configureModule
+                    "
                     ref="admin_username"
                   >
                   </cv-text-input>
@@ -90,7 +92,9 @@
                     placeholder="admin@forgejo.example.org"
                     v-model.trim="adminEmail"
                     class="mg-bottom"
-                    :disabled="loading.getConfiguration || loading.configureModule"
+                    :disabled="
+                      loading.getConfiguration || loading.configureModule
+                    "
                     ref="admin_email"
                   >
                   </cv-text-input>
@@ -98,7 +102,9 @@
                     value="allowRegistration"
                     :label="$t('settings.allow_registration')"
                     v-model="isRegistrationAllowed"
-                    :disabled="loading.getConfiguration || loading.configureModule"
+                    :disabled="
+                      loading.getConfiguration || loading.configureModule
+                    "
                     class="mg-bottom"
                   >
                     <template slot="text-left">{{
