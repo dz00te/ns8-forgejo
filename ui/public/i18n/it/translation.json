@@ -40,7 +40,7 @@
         "allow_registration": "Consenti registrazione utenti",
         "configuring": "Configurazione in corso",
         "instance_configuration": "Configura forgejo",
-        "domain_already_used_in_traefik": "Dominio gia' in uso in traefik",
+        "domain_already_used_in_traefik": "Dominio già in uso in traefik",
         "host_pattern": "Deve essere un nome di dominio completo valido",
         "host_format": "Deve essere un nome di dominio completo valido"
     },
